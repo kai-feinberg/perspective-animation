@@ -278,6 +278,14 @@ input[type="range"] {
   margin-top: 14px;
 }
 
+.secondary + .secondary {
+  margin-top: 8px;
+}
+
+.fileInput {
+  display: none;
+}
+
 .iconButton {
   width: 34px;
   height: 34px;

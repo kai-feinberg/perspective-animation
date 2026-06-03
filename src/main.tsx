@@ -1,99 +1,27 @@
 import React, {useMemo, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Copy, Diamond, Download, Pause, Play, Plus, Trash2} from 'lucide-react';
+import {Copy, Diamond, Download, Pause, Play, Plus, Trash2, Upload} from 'lucide-react';
+import {
+  Keyframe,
+  Project,
+  clamp,
+  defaultProject,
+  interpolateKeyframe,
+  normalizeProject,
+  projectImageToBrowserSrc,
+} from './project';
 import './styles.css';
 
-type Keyframe = {
-  id: string;
-  time: number;
-  x: number;
-  y: number;
-  scale: number;
-  tiltX: number;
-  tiltY: number;
-  roll: number;
-  blur: number;
-  focusX: number;
-  focusY: number;
-  focusSize: number;
-  focusFalloff: number;
-};
-
-const duration = 5;
-const imageSrc = '/grill-me-skill.png';
-
-const initialKeyframes: Keyframe[] = [
-  {
-    id: 'kf-start',
-    time: 0,
-    x: 0,
-    y: 0,
-    scale: 0.86,
-    tiltX: 5,
-    tiltY: -9,
-    roll: -2,
-    blur: 12,
-    focusX: 22,
-    focusY: 54,
-    focusSize: 12,
-    focusFalloff: 38,
-  },
-  {
-    id: 'kf-end',
-    time: 5,
-    x: 70,
-    y: -10,
-    scale: 0.98,
-    tiltX: 1,
-    tiltY: 8,
-    roll: 1,
-    blur: 18,
-    focusX: 83,
-    focusY: 16,
-    focusSize: 10,
-    focusFalloff: 34,
-  },
-];
-
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const lerp = (from: number, to: number, amount: number) => from + (to - from) * amount;
-const ease = (t: number) => t * t * (3 - 2 * t);
-
-function interpolateKeyframe(keyframes: Keyframe[], time: number): Keyframe {
-  const frames = [...keyframes].sort((a, b) => a.time - b.time);
-  const first = frames[0];
-  const last = frames[frames.length - 1];
-  if (time <= first.time) return first;
-  if (time >= last.time) return last;
-  const nextIndex = frames.findIndex((frame) => frame.time >= time);
-  const from = frames[nextIndex - 1];
-  const to = frames[nextIndex];
-  const progress = ease((time - from.time) / (to.time - from.time));
-  return {
-    ...from,
-    id: 'preview',
-    time,
-    x: lerp(from.x, to.x, progress),
-    y: lerp(from.y, to.y, progress),
-    scale: lerp(from.scale, to.scale, progress),
-    tiltX: lerp(from.tiltX, to.tiltX, progress),
-    tiltY: lerp(from.tiltY, to.tiltY, progress),
-    roll: lerp(from.roll, to.roll, progress),
-    blur: lerp(from.blur, to.blur, progress),
-    focusX: lerp(from.focusX, to.focusX, progress),
-    focusY: lerp(from.focusY, to.focusY, progress),
-    focusSize: lerp(from.focusSize, to.focusSize, progress),
-    focusFalloff: lerp(from.focusFalloff, to.focusFalloff, progress),
-  };
-}
-
 function App() {
-  const [keyframes, setKeyframes] = useState(initialKeyframes);
-  const [activeId, setActiveId] = useState(initialKeyframes[1].id);
+  const [project, setProject] = useState<Project>(defaultProject);
+  const [activeId, setActiveId] = useState(defaultProject.keyframes[1].id);
   const [time, setTime] = useState(4.45);
   const [playing, setPlaying] = useState(false);
   const focusRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
+  const {duration, keyframes} = project;
+  const imageSrc = projectImageToBrowserSrc(project.image);
   const active = keyframes.find((frame) => frame.id === activeId) ?? keyframes[0];
   const preview = useMemo(() => interpolateKeyframe(keyframes, time), [keyframes, time]);
 
@@ -113,24 +41,35 @@ function App() {
   }, [playing]);
 
   const updateActive = (patch: Partial<Keyframe>) => {
-    setKeyframes((frames) =>
-      frames
+    setProject((current) => ({
+      ...current,
+      keyframes: current.keyframes
         .map((frame) => (frame.id === active.id ? {...frame, ...patch} : frame))
         .sort((a, b) => a.time - b.time),
-    );
+    }));
   };
 
   const addKeyframe = () => {
     const frame = {...preview, id: `kf-${Date.now()}`, time: Number(time.toFixed(2))};
-    setKeyframes((frames) => [...frames, frame].sort((a, b) => a.time - b.time));
+    setProject((current) => ({
+      ...current,
+      keyframes: [...current.keyframes, frame].sort((a, b) => a.time - b.time),
+    }));
     setActiveId(frame.id);
   };
 
   const removeKeyframe = () => {
     if (keyframes.length <= 2) return;
     const remaining = keyframes.filter((frame) => frame.id !== active.id);
-    setKeyframes(remaining);
+    setProject((current) => ({...current, keyframes: remaining}));
     setActiveId(remaining[0].id);
+  };
+
+  const loadProject = async (file: File) => {
+    const nextProject = normalizeProject(JSON.parse(await file.text()));
+    setProject(nextProject);
+    setTime(0);
+    setActiveId(nextProject.keyframes[0].id);
   };
 
   const onFocusDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -152,7 +91,7 @@ function App() {
     window.addEventListener('pointerup', done);
   };
 
-  const json = JSON.stringify({duration, image: imageSrc, keyframes}, null, 2);
+  const json = JSON.stringify(project, null, 2);
   const transform = `perspective(1200px) translate(${preview.x}px, ${preview.y}px) scale(${preview.scale}) rotateX(${preview.tiltX}deg) rotateY(${preview.tiltY}deg) rotateZ(${preview.roll}deg)`;
   const mask = `radial-gradient(circle at ${preview.focusX}% ${preview.focusY}%, black 0%, black ${preview.focusSize}%, transparent ${preview.focusFalloff}%)`;
 
@@ -264,8 +203,22 @@ function App() {
             URL.revokeObjectURL(url);
           }}
         >
-          <Download size={16} /> Export JSON
+          <Download size={16} /> Save JSON
         </button>
+        <button className="secondary" onClick={() => fileRef.current?.click()}>
+          <Upload size={16} /> Load JSON
+        </button>
+        <input
+          ref={fileRef}
+          className="fileInput"
+          type="file"
+          accept="application/json,.json"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void loadProject(file);
+            event.currentTarget.value = '';
+          }}
+        />
       </aside>
     </main>
   );

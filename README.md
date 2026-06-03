@@ -18,7 +18,16 @@ Open `http://127.0.0.1:5177/`.
 - Interpolated transform values: position, scale, tilt X/Y, and roll.
 - One blur effect using a blurred base image.
 - Custom focus point using a sharp image layer with a radial mask.
-- JSON export of the current project state.
+- Save/load JSON for the current project state.
+- Headless MP4 rendering through Remotion.
+
+## Render Headlessly
+
+```bash
+pnpm render -- --project examples/focus-keyframes.json --out out/focus-keyframes.mp4
+```
+
+The CLI renders the `FocusKeyframeVideo` Remotion composition from the JSON project file. JSON saved from the UI can be passed to `--project`.
 
 ## Test Asset
 

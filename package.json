@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
+    "render": "node scripts/render.mjs",
     "test": "playwright test"
   },
   "dependencies": {
+    "@remotion/bundler": "^4.0.471",
+    "@remotion/renderer": "^4.0.471",
     "@vitejs/plugin-react": "^4.5.0",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "remotion": "^4.0.471",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
   },

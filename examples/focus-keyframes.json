@@ -1,0 +1,39 @@
+{
+  "duration": 5,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "image": "grill-me-skill.png",
+  "keyframes": [
+    {
+      "id": "kf-start",
+      "time": 0,
+      "x": 0,
+      "y": 0,
+      "scale": 0.86,
+      "tiltX": 5,
+      "tiltY": -9,
+      "roll": -2,
+      "blur": 12,
+      "focusX": 22,
+      "focusY": 54,
+      "focusSize": 12,
+      "focusFalloff": 38
+    },
+    {
+      "id": "kf-end",
+      "time": 5,
+      "x": 70,
+      "y": -10,
+      "scale": 0.98,
+      "tiltX": 1,
+      "tiltY": 8,
+      "roll": 1,
+      "blur": 18,
+      "focusX": 83,
+      "focusY": 16,
+      "focusSize": 10,
+      "focusFalloff": 34
+    }
+  ]
+}
