@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "render": "node scripts/render.mjs",
+    "serve": "pnpm build && node scripts/server.mjs",
     "test": "playwright test"
   },
   "dependencies": {

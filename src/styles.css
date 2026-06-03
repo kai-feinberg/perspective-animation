@@ -282,6 +282,40 @@ input[type="range"] {
   margin-top: 8px;
 }
 
+.secondary:disabled {
+  cursor: progress;
+  opacity: 0.68;
+}
+
+.renderButton {
+  border-color: #d6a33e;
+}
+
+.renderStatus {
+  min-height: 38px;
+  margin: 10px 0 0;
+  color: #a49d92;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.renderStatus code {
+  color: #eee7d9;
+}
+
+.renderStatus a {
+  color: #f2c86a;
+  text-decoration: none;
+}
+
+.renderStatus.error {
+  color: #ffb7a6;
+}
+
+.renderStatus.success {
+  color: #d7e4c3;
+}
+
 .fileInput {
   display: none;
 }

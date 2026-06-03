@@ -11,6 +11,14 @@ pnpm dev --port 5177
 
 Open `http://127.0.0.1:5177/`.
 
+For editor-triggered rendering, run the local server instead:
+
+```bash
+pnpm serve
+```
+
+Open `http://127.0.0.1:4177/`.
+
 ## What Works
 
 - CRUD-style keyframes: add, select, delete.
@@ -20,6 +28,7 @@ Open `http://127.0.0.1:5177/`.
 - Custom focus point using a sharp image layer with a radial mask.
 - Save/load JSON for the current project state.
 - Headless MP4 rendering through Remotion.
+- Render the current editor state through `POST /api/render` when running `pnpm serve`.
 
 ## Render Headlessly
 
@@ -28,6 +37,8 @@ pnpm render -- --project examples/focus-keyframes.json --out out/focus-keyframes
 ```
 
 The CLI renders the `FocusKeyframeVideo` Remotion composition from the JSON project file. JSON saved from the UI can be passed to `--project`.
+
+The editor's `Render MP4` button uses the same CLI path via the local server and writes videos to `out/renders/`.
 
 ## Test Asset
 

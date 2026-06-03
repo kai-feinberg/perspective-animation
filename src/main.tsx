@@ -1,6 +1,6 @@
 import React, {useMemo, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Copy, Diamond, Download, Pause, Play, Plus, Trash2, Upload} from 'lucide-react';
+import {Copy, Diamond, Download, Film, Pause, Play, Plus, Trash2, Upload} from 'lucide-react';
 import {
   Keyframe,
   Project,
@@ -17,6 +17,12 @@ function App() {
   const [activeId, setActiveId] = useState(defaultProject.keyframes[1].id);
   const [time, setTime] = useState(4.45);
   const [playing, setPlaying] = useState(false);
+  const [renderState, setRenderState] = useState<
+    | {status: 'idle'}
+    | {status: 'rendering'}
+    | {status: 'complete'; videoUrl: string; outputPath: string}
+    | {status: 'error'; message: string}
+  >({status: 'idle'});
   const focusRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +76,28 @@ function App() {
     setProject(nextProject);
     setTime(0);
     setActiveId(nextProject.keyframes[0].id);
+    setRenderState({status: 'idle'});
+  };
+
+  const renderCurrentProject = async () => {
+    setRenderState({status: 'rendering'});
+
+    try {
+      const response = await fetch('/api/render', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(project),
+      });
+
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error || 'Render failed.');
+      }
+
+      setRenderState({status: 'complete', videoUrl: body.videoUrl, outputPath: body.outputPath});
+    } catch (error) {
+      setRenderState({status: 'error', message: error instanceof Error ? error.message : String(error)});
+    }
   };
 
   const onFocusDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -208,6 +236,10 @@ function App() {
         <button className="secondary" onClick={() => fileRef.current?.click()}>
           <Upload size={16} /> Load JSON
         </button>
+        <button className="secondary renderButton" disabled={renderState.status === 'rendering'} onClick={renderCurrentProject}>
+          <Film size={16} /> {renderState.status === 'rendering' ? 'Rendering...' : 'Render MP4'}
+        </button>
+        <RenderStatus state={renderState} />
         <input
           ref={fileRef}
           className="fileInput"
@@ -221,6 +253,34 @@ function App() {
         />
       </aside>
     </main>
+  );
+}
+
+function RenderStatus({
+  state,
+}: {
+  state:
+    | {status: 'idle'}
+    | {status: 'rendering'}
+    | {status: 'complete'; videoUrl: string; outputPath: string}
+    | {status: 'error'; message: string};
+}) {
+  if (state.status === 'idle') {
+    return <p className="renderStatus">Run with <code>pnpm serve</code> to render from the editor.</p>;
+  }
+
+  if (state.status === 'rendering') {
+    return <p className="renderStatus">Rendering through the local Remotion CLI...</p>;
+  }
+
+  if (state.status === 'error') {
+    return <p className="renderStatus error">{state.message}</p>;
+  }
+
+  return (
+    <p className="renderStatus success">
+      Render complete. <a href={state.videoUrl} target="_blank" rel="noreferrer">Open MP4</a>
+    </p>
   );
 }
 
