@@ -25,6 +25,8 @@ function App() {
   >({status: 'idle'});
   const focusRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const didDragKeyframeRef = useRef(false);
 
   const {duration, keyframes} = project;
   const imageSrc = projectImageToBrowserSrc(project.image);
@@ -119,66 +121,108 @@ function App() {
     window.addEventListener('pointerup', done);
   };
 
+  const writeKeyframeTime = (id: string, clientX: number) => {
+    const rect = timelineRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const nextTime = Number(clamp(((clientX - rect.left) / rect.width) * duration, 0, duration).toFixed(2));
+    setProject((current) => ({
+      ...current,
+      keyframes: current.keyframes
+        .map((frame) => (frame.id === id ? {...frame, time: nextTime} : frame))
+        .sort((a, b) => a.time - b.time),
+    }));
+    setTime(nextTime);
+  };
+
+  const onKeyframePointerDown = (event: React.PointerEvent<HTMLButtonElement>, frame: Keyframe) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setPlaying(false);
+    setActiveId(frame.id);
+    setTime(frame.time);
+    didDragKeyframeRef.current = false;
+
+    const startX = event.clientX;
+    const move = (moveEvent: PointerEvent) => {
+      if (Math.abs(moveEvent.clientX - startX) > 2) {
+        didDragKeyframeRef.current = true;
+      }
+      writeKeyframeTime(frame.id, moveEvent.clientX);
+    };
+    const done = (upEvent: PointerEvent) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', done);
+      if (didDragKeyframeRef.current) {
+        writeKeyframeTime(frame.id, upEvent.clientX);
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', done);
+  };
+
   const json = JSON.stringify(project, null, 2);
   const transform = `perspective(1200px) translate(${preview.x}px, ${preview.y}px) scale(${preview.scale}) rotateX(${preview.tiltX}deg) rotateY(${preview.tiltY}deg) rotateZ(${preview.roll}deg)`;
   const mask = `radial-gradient(circle at ${preview.focusX}% ${preview.focusY}%, black 0%, black ${preview.focusSize}%, transparent ${preview.focusFalloff}%)`;
+  const showSharpLayer = project.focusEnabled || !project.blurEnabled;
 
   return (
     <main className="app">
       <section className="previewPanel">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Local prototype</p>
-            <h1>Focus keyframe tool</h1>
-          </div>
-          <button className="primary" onClick={addKeyframe}>
-            <Plus size={17} /> Keyframe
-          </button>
-        </header>
-
-        <div className="stage" data-testid="stage">
+        <div className={`stage background-${project.background}`} data-testid="stage">
           <div className="shot" style={{transform}}>
-            <img className="shotImage blurred" src={imageSrc} style={{filter: `blur(${preview.blur}px)`}} />
-            <img
-              className="shotImage sharp"
-              src={imageSrc}
-              style={{maskImage: mask, WebkitMaskImage: mask}}
-            />
+            <img className="shotImage blurred" src={imageSrc} style={{filter: project.blurEnabled ? `blur(${preview.blur}px)` : 'none'}} />
+            {showSharpLayer && (
+              <img
+                className="shotImage sharp"
+                src={imageSrc}
+                style={project.focusEnabled ? {maskImage: mask, WebkitMaskImage: mask} : undefined}
+              />
+            )}
           </div>
         </div>
 
-        <div className="transport">
-          <button className="iconButton" aria-label={playing ? 'Pause preview' : 'Play preview'} onClick={() => setPlaying(!playing)}>
-            {playing ? <Pause size={17} /> : <Play size={17} />}
-          </button>
-          <span className="clock">{time.toFixed(2)}s / {duration.toFixed(2)}s</span>
-          <input
-            aria-label="Current time"
-            type="range"
-            min="0"
-            max={duration}
-            step="0.01"
-            value={time}
-            onChange={(event) => setTime(Number(event.target.value))}
-          />
-        </div>
-
-        <div className="timeline">
-          {keyframes.map((frame) => (
-            <button
-              key={frame.id}
-              className={`marker ${frame.id === active.id ? 'active' : ''}`}
-              style={{left: `${(frame.time / duration) * 100}%`}}
-              onClick={() => {
-                setActiveId(frame.id);
-                setTime(frame.time);
-              }}
-              aria-label={`Keyframe at ${frame.time}s`}
-            >
-              <Diamond size={14} fill="currentColor" />
+        <div className="timelinePanel">
+          <div className="timelineToolbar">
+            <button className="iconButton" aria-label={playing ? 'Pause preview' : 'Play preview'} onClick={() => setPlaying(!playing)}>
+              {playing ? <Pause size={17} /> : <Play size={17} />}
             </button>
-          ))}
-          <div className="playhead" style={{left: `${(time / duration) * 100}%`}} />
+            <span className="clock">{time.toFixed(2)}s / {duration.toFixed(2)}s</span>
+            <button className="primary" onClick={addKeyframe}>
+              <Plus size={17} /> Keyframe
+            </button>
+          </div>
+          <div className="timeline" ref={timelineRef}>
+            <input
+              className="timelineScrubber"
+              aria-label="Current time"
+              type="range"
+              min="0"
+              max={duration}
+              step="0.01"
+              value={time}
+              onChange={(event) => setTime(Number(event.target.value))}
+            />
+            {keyframes.map((frame) => (
+              <button
+                key={frame.id}
+                className={`marker ${frame.id === active.id ? 'active' : ''}`}
+                style={{left: `${(frame.time / duration) * 100}%`}}
+                onPointerDown={(event) => onKeyframePointerDown(event, frame)}
+                onClick={() => {
+                  if (didDragKeyframeRef.current) {
+                    didDragKeyframeRef.current = false;
+                    return;
+                  }
+                  setActiveId(frame.id);
+                  setTime(frame.time);
+                }}
+                aria-label={`Keyframe at ${frame.time}s`}
+              >
+                <Diamond size={14} fill="currentColor" />
+              </button>
+            ))}
+            <div className="playhead" style={{left: `${(time / duration) * 100}%`}} />
+          </div>
         </div>
       </section>
 
@@ -193,6 +237,24 @@ function App() {
           </button>
         </div>
 
+        <div className="switchRow">
+          <Toggle label="Blur" checked={project.blurEnabled} onChange={(blurEnabled) => setProject((current) => ({...current, blurEnabled}))} />
+          <Toggle label="Focus" checked={project.focusEnabled} onChange={(focusEnabled) => setProject((current) => ({...current, focusEnabled}))} />
+        </div>
+
+        <label className="backgroundControl">
+          <span>Background</span>
+          <select value={project.background} onChange={(event) => setProject((current) => ({...current, background: event.target.value as Project['background']}))}>
+            <option value="current">Warm lines</option>
+            <option value="clear">Clear</option>
+            <option value="grid">Grid</option>
+            <option value="dots">Dots</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+
+        <div className="sectionBreak" />
         <Control label="Time" value={active.time} min={0} max={duration} step={0.01} suffix="s" onChange={(timeValue) => updateActive({time: timeValue})} />
         <Control label="X" value={active.x} min={-220} max={220} step={1} onChange={(x) => updateActive({x})} />
         <Control label="Y" value={active.y} min={-160} max={160} step={1} onChange={(y) => updateActive({y})} />
@@ -306,6 +368,16 @@ function Control({
       <span>{label}</span>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
       <output>{value.toFixed(step < 1 ? 2 : 0)}{suffix}</output>
+    </label>
+  );
+}
+
+function Toggle({label, checked, onChange}: {label: string; checked: boolean; onChange: (checked: boolean) => void}) {
+  return (
+    <label className="toggle">
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span className="toggleTrack"><span /></span>
+      <strong>{label}</strong>
     </label>
   );
 }

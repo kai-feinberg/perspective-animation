@@ -20,6 +20,9 @@ export type Project = {
   width: number;
   height: number;
   image: string;
+  blurEnabled: boolean;
+  focusEnabled: boolean;
+  background: 'current' | 'clear' | 'grid' | 'dots' | 'light' | 'dark';
   keyframes: Keyframe[];
 };
 
@@ -29,6 +32,9 @@ export const defaultProject: Project = {
   width: 1920,
   height: 1080,
   image: 'grill-me-skill.png',
+  blurEnabled: true,
+  focusEnabled: true,
+  background: 'current',
   keyframes: [
     {
       id: 'kf-start',
