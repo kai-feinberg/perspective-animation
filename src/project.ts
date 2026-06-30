@@ -22,7 +22,8 @@ export type Project = {
   image: string;
   blurEnabled: boolean;
   focusEnabled: boolean;
-  background: 'current' | 'clear' | 'grid' | 'dots' | 'light' | 'dark';
+  backgroundPattern: 'lines' | 'grid' | 'dots' | 'clear';
+  backgroundTheme: 'dark' | 'light';
   keyframes: Keyframe[];
 };
 
@@ -34,7 +35,8 @@ export const defaultProject: Project = {
   image: 'grill-me-skill.png',
   blurEnabled: true,
   focusEnabled: true,
-  background: 'current',
+  backgroundPattern: 'lines',
+  backgroundTheme: 'dark',
   keyframes: [
     {
       id: 'kf-start',
@@ -113,9 +115,23 @@ export function projectImageToBrowserSrc(image: string) {
 }
 
 export function normalizeProject(value: Project): Project {
+  const legacyBackground = (value as Project & {background?: string}).background;
+  const backgroundPattern =
+    legacyBackground === 'grid' || legacyBackground === 'dots' || legacyBackground === 'clear'
+      ? legacyBackground
+      : value.backgroundPattern ?? defaultProject.backgroundPattern;
+  const backgroundTheme =
+    legacyBackground === 'light'
+      ? 'light'
+      : legacyBackground === 'dark' || legacyBackground === 'current' || legacyBackground === 'grid' || legacyBackground === 'dots'
+        ? 'dark'
+        : value.backgroundTheme ?? defaultProject.backgroundTheme;
+
   return {
     ...defaultProject,
     ...value,
+    backgroundPattern,
+    backgroundTheme,
     keyframes: value.keyframes
       .map((frame, index) => ({
         ...defaultProject.keyframes[Math.min(index, defaultProject.keyframes.length - 1)],

@@ -14,6 +14,34 @@ const toRenderSrc = (image: string) => {
   return staticFile(image.replace(/^\//, ''));
 };
 
+const getBackgroundStyle = (project: Project): React.CSSProperties => {
+  const isLight = project.backgroundTheme === 'light';
+  const base = isLight ? '#e8e6e1' : '#171616';
+  const line = isLight ? 'rgba(20,18,15,.14)' : 'rgba(255,255,255,.075)';
+  const dot = isLight ? 'rgba(20,18,15,.24)' : 'rgba(255,255,255,.2)';
+
+  if (project.backgroundPattern === 'clear') {
+    return {background: base};
+  }
+
+  if (project.backgroundPattern === 'grid') {
+    return {
+      background: `repeating-linear-gradient(90deg, ${line} 0 1px, transparent 1px 48px), repeating-linear-gradient(0deg, ${line} 0 1px, transparent 1px 48px), ${base}`,
+    };
+  }
+
+  if (project.backgroundPattern === 'dots') {
+    return {
+      background: `radial-gradient(circle, ${dot} 1.5px, transparent 1.5px), ${base}`,
+      backgroundSize: '24px 24px',
+    };
+  }
+
+  return {
+    background: `repeating-linear-gradient(90deg, ${line} 0 1px, transparent 1px 48px), ${base}`,
+  };
+};
+
 export function FocusKeyframeVideo({project: rawProject}: Props) {
   const project = normalizeProject(rawProject);
   const frame = useCurrentFrame();
@@ -23,20 +51,12 @@ export function FocusKeyframeVideo({project: rawProject}: Props) {
   const transform = `perspective(1200px) translate(${preview.x}px, ${preview.y}px) scale(${preview.scale}) rotateX(${preview.tiltX}deg) rotateY(${preview.tiltY}deg) rotateZ(${preview.roll}deg)`;
   const mask = `radial-gradient(circle at ${preview.focusX}% ${preview.focusY}%, black 0%, black ${preview.focusSize}%, transparent ${preview.focusFalloff}%)`;
   const src = toRenderSrc(project.image);
-  const backgrounds = {
-    current: 'repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 48px), #171616',
-    clear: 'transparent',
-    grid: 'repeating-linear-gradient(90deg, rgba(255,255,255,.09) 0 1px, transparent 1px 48px), repeating-linear-gradient(0deg, rgba(255,255,255,.09) 0 1px, transparent 1px 48px), #202020',
-    dots: 'radial-gradient(circle, rgba(255,255,255,.18) 1.5px, transparent 1.5px), #202020',
-    light: '#e8e6e1',
-    dark: '#101010',
-  };
+  const backgroundStyle = getBackgroundStyle(project);
 
   return (
     <AbsoluteFill
       style={{
-        background: backgrounds[project.background],
-        backgroundSize: project.background === 'dots' ? '24px 24px' : undefined,
+        ...backgroundStyle,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',

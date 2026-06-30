@@ -168,7 +168,7 @@ function App() {
   return (
     <main className="app">
       <section className="previewPanel">
-        <div className={`stage background-${project.background}`} data-testid="stage">
+        <div className={`stage background-${project.backgroundTheme} pattern-${project.backgroundPattern}`} data-testid="stage">
           <div className="shot" style={{transform}}>
             <img className="shotImage blurred" src={imageSrc} style={{filter: project.blurEnabled ? `blur(${preview.blur}px)` : 'none'}} />
             {showSharpLayer && (
@@ -243,14 +243,20 @@ function App() {
         </div>
 
         <label className="backgroundControl">
-          <span>Background</span>
-          <select value={project.background} onChange={(event) => setProject((current) => ({...current, background: event.target.value as Project['background']}))}>
-            <option value="current">Warm lines</option>
-            <option value="clear">Clear</option>
+          <span>Theme</span>
+          <select value={project.backgroundTheme} onChange={(event) => setProject((current) => ({...current, backgroundTheme: event.target.value as Project['backgroundTheme']}))}>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </label>
+
+        <label className="backgroundControl">
+          <span>Pattern</span>
+          <select value={project.backgroundPattern} onChange={(event) => setProject((current) => ({...current, backgroundPattern: event.target.value as Project['backgroundPattern']}))}>
+            <option value="lines">Lines</option>
             <option value="grid">Grid</option>
             <option value="dots">Dots</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
+            <option value="clear">Clear</option>
           </select>
         </label>
 

@@ -25,10 +25,7 @@ input {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 390px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    #171616;
-  background-size: 48px 48px;
+  background: #171616;
 }
 
 .previewPanel {
@@ -72,36 +69,40 @@ h2 {
   perspective: 1200px;
 }
 
-.background-current {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    #171616;
-  background-size: 48px 48px;
-}
-
-.background-clear {
-  background: transparent;
-}
-
-.background-grid {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px),
-    #202020;
-  background-size: 48px 48px;
-}
-
-.background-dots {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 1.5px, transparent 1.5px), #202020;
-  background-size: 24px 24px;
+.background-dark {
+  --stage-bg: #171616;
+  --stage-line: rgba(255, 255, 255, 0.075);
+  --stage-dot: rgba(255, 255, 255, 0.2);
 }
 
 .background-light {
-  background: #e8e6e1;
+  --stage-bg: #e8e6e1;
+  --stage-line: rgba(20, 18, 15, 0.14);
+  --stage-dot: rgba(20, 18, 15, 0.24);
 }
 
-.background-dark {
-  background: #101010;
+.pattern-lines {
+  background:
+    linear-gradient(90deg, var(--stage-line) 1px, transparent 1px),
+    var(--stage-bg);
+  background-size: 48px 48px;
+}
+
+.pattern-grid {
+  background:
+    linear-gradient(90deg, var(--stage-line) 1px, transparent 1px),
+    linear-gradient(0deg, var(--stage-line) 1px, transparent 1px),
+    var(--stage-bg);
+  background-size: 48px 48px;
+}
+
+.pattern-dots {
+  background: radial-gradient(circle, var(--stage-dot) 1.5px, transparent 1.5px), var(--stage-bg);
+  background-size: 24px 24px;
+}
+
+.pattern-clear {
+  background: var(--stage-bg);
 }
 
 .shot {
